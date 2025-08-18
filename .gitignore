@@ -1,0 +1,207 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyQt
+*.ui
+*.qrc
+
+# Application specific
+# ==================
+
+# 虛擬環境
+.venv/
+venv/
+env/
+
+# 設定檔案
+config/
+.yolo_annotator/
+
+# 模型檔案 (大檔案，可以選擇性排除)
+*.pt
+models/
+
+# 圖片和標註檔案 (測試用途，實際專案可能需要保留)
+images/
+labels/
+exports/
+test_images/
+temp/
+
+# 快取檔案
+cache/
+*.cache
+
+# 日誌檔案
+logs/
+*.log
+
+# 備份檔案
+backup/
+*.bak
+*.backup
+
+# 測試輸出
+test_output/
+test_results/
+test_report.json
+
+# IDE 設定檔案
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 臨時檔案
+tmp/
+temp/
+*.tmp
+*.temp
+
+# 效能分析檔案
+*.prof
+*.pstats
+
+# Coverage reports
+htmlcov/
+.coverage
+
+# 個人設定檔案
+personal_config.json
+user_settings.json
