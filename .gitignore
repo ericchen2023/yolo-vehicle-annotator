@@ -138,6 +138,11 @@ cython_debug/
 # Application specific
 # ==================
 
+# 部署腳本 (本地使用，不需要上傳)
+deploy_to_github.bat
+deploy_to_github.sh
+GITHUB_DEPLOYMENT.md
+
 # 虛擬環境
 .venv/
 venv/
