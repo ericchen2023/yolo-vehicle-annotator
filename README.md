@@ -93,7 +93,7 @@ install.bat
 
 ```bash
 # 1. 建立虛擬環境
-python -m venv .venv
+py -m venv .venv
 
 # 2. 啟動虛擬環境
 # Windows
