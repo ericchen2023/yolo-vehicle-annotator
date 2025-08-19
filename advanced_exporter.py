@@ -31,6 +31,9 @@ class AdvancedExporter:
         try:
             from PIL import Image
             
+            # 確保輸出目錄存在
+            os.makedirs(output_dir, exist_ok=True)
+            
             # 取得圖片尺寸
             img = Image.open(image_path)
             img_width, img_height = img.size
@@ -278,6 +281,9 @@ class AdvancedExporter:
     def export_classes_file(self, output_dir: str, language: str = 'both') -> bool:
         """匯出類別檔案"""
         try:
+            # 確保輸出目錄存在
+            os.makedirs(output_dir, exist_ok=True)
+            
             if language in ['zh', 'both']:
                 # 中文類別檔案
                 zh_path = os.path.join(output_dir, "classes.txt")

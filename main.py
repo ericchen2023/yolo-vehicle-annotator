@@ -1416,24 +1416,51 @@ class MainWindow(QMainWindow):
             return
         
         try:
+            # 確保exports/yolo目錄存在
+            output_dir = os.path.join('exports', 'yolo')
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # 轉換標註格式
+            annotations = []
+            for rect_data in self.annotator.get_rects():
+                if hasattr(rect_data, 'get'):  # 字典格式
+                    if 'rect' in rect_data and 'class_id' in rect_data:
+                        qrect = rect_data['rect']
+                        annotations.append({
+                            'class': rect_data['class_id'],
+                            'bbox': [qrect.x(), qrect.y(), qrect.width(), qrect.height()]
+                        })
+                    elif 'class' in rect_data and 'x' in rect_data:
+                        annotations.append({
+                            'class': rect_data['class'],
+                            'bbox': [rect_data['x'], rect_data['y'], rect_data['width'], rect_data['height']]
+                        })
+            
+            if not annotations:
+                QMessageBox.warning(self, '警告', '沒有找到有效的標註資料！')
+                return
+            
             exporter = AdvancedExporter()
             success = exporter.export_yolo(
                 self.image_path, 
-                self.annotator.get_rects(), 
-                'labels'
+                annotations, 
+                output_dir
             )
             
             # 同時匯出類別檔案
-            classes_path = os.path.join('labels', 'classes.txt')
-            exporter.export_classes_file('labels')
+            classes_success = exporter.export_classes_file(output_dir)
+            classes_path = os.path.join(output_dir, 'classes.txt')
             
-            if success:
+            if success and classes_success:
+                base_name = os.path.splitext(os.path.basename(self.image_path))[0]
+                label_file = os.path.join(output_dir, f'{base_name}.txt')
                 QMessageBox.information(
                     self, '匯出成功', 
-                    f'標註已匯出至: labels/ 目錄\n類別檔案: {classes_path}'
+                    f'標註已匯出至: {label_file}\n類別檔案: {classes_path}\n\n'
+                    f'標註數量: {len(annotations)}'
                 )
             else:
-                QMessageBox.warning(self, '匯出警告', '部分檔案匯出失敗，請檢查logs')
+                QMessageBox.warning(self, '匯出警告', '部分檔案匯出失敗，請檢查控制台輸出')
         except Exception as e:
             QMessageBox.critical(self, '匯出失敗', f'匯出過程發生錯誤：{str(e)}')
 
@@ -1454,11 +1481,16 @@ class MainWindow(QMainWindow):
         if reply != QMessageBox.Yes:
             return
         
+        # 確保exports/yolo目錄存在
+        output_dir = os.path.join('exports', 'yolo')
+        os.makedirs(output_dir, exist_ok=True)
+        
         # 顯示進度條
         self.progress_bar.setVisible(True)
         self.progress_bar.setMaximum(len(self.image_list))
         
         exported_count = 0
+        total_annotations = 0
         
         try:
             for i, image_path in enumerate(self.image_list):
@@ -1466,27 +1498,49 @@ class MainWindow(QMainWindow):
                 QApplication.processEvents()
                 
                 # 從緩存獲取標註
-                annotations = self.annotations_cache.get(image_path, [])
-                if annotations:
+                annotations_raw = self.annotations_cache.get(image_path, [])
+                if annotations_raw:
                     try:
-                        exporter = AdvancedExporter()
-                        success = exporter.export_yolo(image_path, annotations, 'labels')
-                        if success:
-                            exported_count += 1
+                        # 轉換標註格式
+                        annotations = []
+                        for rect_data in annotations_raw:
+                            if hasattr(rect_data, 'get'):  # 字典格式
+                                if 'rect' in rect_data and 'class_id' in rect_data:
+                                    qrect = rect_data['rect']
+                                    annotations.append({
+                                        'class': rect_data['class_id'],
+                                        'bbox': [qrect.x(), qrect.y(), qrect.width(), qrect.height()]
+                                    })
+                                elif 'class' in rect_data and 'x' in rect_data:
+                                    annotations.append({
+                                        'class': rect_data['class'],
+                                        'bbox': [rect_data['x'], rect_data['y'], rect_data['width'], rect_data['height']]
+                                    })
+                        
+                        if annotations:
+                            exporter = AdvancedExporter()
+                            success = exporter.export_yolo(image_path, annotations, output_dir)
+                            if success:
+                                exported_count += 1
+                                total_annotations += len(annotations)
                     except Exception as e:
                         print(f"匯出 {image_path} 時發生錯誤: {e}")
                         continue
             
             # 匯出類別檔案
             exporter = AdvancedExporter()
-            exporter.export_classes_file('labels')
+            classes_success = exporter.export_classes_file(output_dir)
             
         finally:
             self.progress_bar.setVisible(False)
             
+        classes_path = os.path.join(output_dir, 'classes.txt')
         QMessageBox.information(
             self, '批次匯出完成', 
-            f'已匯出 {exported_count} 個標註檔案\n類別檔案: labels/classes.txt'
+            f'已匯出 {exported_count} 個標註檔案\n'
+            f'總標註數量: {total_annotations}\n'
+            f'輸出目錄: {output_dir}\n'
+            f'類別檔案: {classes_path}'
         )
     
     def show_advanced_export_dialog(self):
