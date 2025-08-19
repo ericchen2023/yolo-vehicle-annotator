@@ -7,10 +7,18 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
     QListWidget, QListWidgetItem, QCheckBox, QGroupBox,
     QProgressBar, QTextEdit, QSplitter, QWidget, QScrollArea,
-    QFrame, QButtonGroup, QRadioButton
+    QFrame, QButtonGroup, QRadioButton, QMessageBox
 )
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from PyQt5.QtGui import QFont, QPixmap, QPainter, QPen, QColor, QBrush
+
+# 導入樣式表
+try:
+    from styles import get_main_style
+    STYLE_AVAILABLE = True
+except ImportError:
+    STYLE_AVAILABLE = False
+    print("樣式表模組不可用，使用預設樣式")
 
 class PredictionResultDialog(QDialog):
     """AI預測結果對話框"""
@@ -41,29 +49,102 @@ class PredictionResultDialog(QDialog):
         self.setMinimumSize(800, 600)
         self.resize(1000, 700)
         
+        # 設定美觀的現代化樣式
+        if STYLE_AVAILABLE:
+            self.setStyleSheet(get_main_style())
+        else:
+            # 備用樣式
+            self.setStyleSheet("""
+                QDialog {
+                    background-color: #f8f9fa;
+                    color: #495057;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                }
+                
+                QPushButton {
+                    background-color: #339af0;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    font-weight: 500;
+                }
+                
+                QPushButton:hover {
+                    background-color: #228be6;
+                }
+                
+                QListWidget {
+                    background-color: white;
+                    border: 1px solid #dee2e6;
+                    border-radius: 6px;
+                }
+                
+                QGroupBox {
+                    border: 1px solid #dee2e6;
+                    border-radius: 6px;
+                    font-weight: 600;
+                    margin: 8px 0;
+                    padding-top: 10px;
+                    background-color: white;
+                }
+            """)
+        
         self.setup_ui()
         self.load_predictions()
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
         
-        # 標題資訊
-        title_layout = QHBoxLayout()
+        # 固定標題資訊 - 不可摺疊、不移動
+        title_frame = QFrame()
+        title_frame.setFrameStyle(QFrame.StyledPanel)
+        title_frame.setFixedHeight(60)  # 固定高度
+        title_frame.setStyleSheet("""
+            QFrame {
+                background-color: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                margin: 2px;
+            }
+        """)
+        
+        title_layout = QHBoxLayout(title_frame)
+        title_layout.setContentsMargins(10, 8, 10, 8)
         
         title_label = QLabel(f'圖片: {os.path.basename(self.image_path)}')
         title_font = QFont()
         title_font.setPointSize(12)
         title_font.setBold(True)
         title_label.setFont(title_font)
+        title_label.setStyleSheet("""
+            QLabel {
+                color: #495057;
+                padding: 5px;
+                background-color: rgba(255, 255, 255, 0.9);
+                border-radius: 4px;
+                border: 1px solid rgba(0, 0, 0, 0.1);
+            }
+        """)
         title_layout.addWidget(title_label)
         
         title_layout.addStretch()
         
         count_label = QLabel(f'找到 {len(self.predictions)} 個車輛')
-        count_label.setStyleSheet('color: #0078d4;')
+        count_label.setStyleSheet("""
+            QLabel {
+                color: #0078d4;
+                font-weight: 600;
+                padding: 8px 12px;
+                background-color: rgba(0, 120, 212, 0.15);
+                border-radius: 6px;
+                border: 2px solid rgba(0, 120, 212, 0.4);
+            }
+        """)
         title_layout.addWidget(count_label)
         
-        layout.addLayout(title_layout)
+        # 將固定標題添加到主佈局
+        layout.addWidget(title_frame)
         
         # 主要分割器
         main_splitter = QSplitter(Qt.Horizontal)
@@ -81,19 +162,58 @@ class PredictionResultDialog(QDialog):
         
         # 統計資訊
         stats_layout = QHBoxLayout()
+        stats_layout.setContentsMargins(5, 10, 5, 5)
         
         self.stats_label = QLabel('統計: 0 接受, 0 拒絕')
+        self.stats_label.setStyleSheet("""
+            QLabel {
+                color: #495057;
+                font-weight: 600;
+                padding: 8px 12px;
+                background-color: rgba(248, 249, 250, 0.9);
+                border-radius: 6px;
+                border: 1px solid #dee2e6;
+            }
+        """)
         stats_layout.addWidget(self.stats_label)
         
         stats_layout.addStretch()
         
         # 批次操作按鈕
-        batch_accept_btn = QPushButton('全部接受')
+        batch_accept_btn = QPushButton('✓ 全部接受')
         batch_accept_btn.clicked.connect(self.accept_all_predictions)
+        batch_accept_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: 500;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+        """)
         stats_layout.addWidget(batch_accept_btn)
         
-        batch_reject_btn = QPushButton('全部拒絕')
+        batch_reject_btn = QPushButton('✗ 全部拒絕')
         batch_reject_btn.clicked.connect(self.reject_all_predictions)
+        batch_reject_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: 500;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #c82333;
+            }
+        """)
         stats_layout.addWidget(batch_reject_btn)
         
         layout.addLayout(stats_layout)
@@ -151,17 +271,34 @@ class PredictionResultDialog(QDialog):
         
         layout.addWidget(options_group)
         
-        # 圖片顯示區域
-        self.image_label = QLabel()
-        self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setStyleSheet("""
-            QLabel {
+        # 圖片顯示區域 - 固定大小，防止亂動
+        image_container = QWidget()
+        image_container.setFixedSize(420, 320)  # 固定容器大小
+        image_container.setStyleSheet("""
+            QWidget {
                 border: 2px solid #3e3e42;
                 border-radius: 4px;
                 background-color: #252526;
             }
         """)
+        
+        # 圖片標籤放在固定容器中央
+        container_layout = QVBoxLayout(image_container)
+        container_layout.setContentsMargins(10, 10, 10, 10)
+        
+        self.image_label = QLabel()
+        self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setMinimumSize(400, 300)
+        self.image_label.setMaximumSize(400, 300)  # 設定最大尺寸防止變化
+        self.image_label.setScaledContents(False)  # 關閉自動縮放內容
+        self.image_label.setStyleSheet("""
+            QLabel {
+                border: none;
+                background-color: transparent;
+            }
+        """)
+        
+        container_layout.addWidget(self.image_label)
         
         # 如果有圖片，顯示預覽 (現在checkbox已經創建了)
         if self.image_pixmap and not self.image_pixmap.isNull():
@@ -181,7 +318,7 @@ class PredictionResultDialog(QDialog):
             else:
                 self.image_label.setText(f'圖片檔案不存在\n{os.path.basename(self.image_path)}')
         
-        layout.addWidget(self.image_label)
+        layout.addWidget(image_container)
         
         return panel
 
@@ -200,15 +337,62 @@ class PredictionResultDialog(QDialog):
         # 預測列表
         self.predictions_list = QListWidget()
         self.predictions_list.currentItemChanged.connect(self.on_prediction_selected)
+        # 設定列表樣式，確保項目有足夠空間
+        self.predictions_list.setStyleSheet("""
+            QListWidget {
+                background-color: white;
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                selection-background-color: rgba(0, 120, 212, 0.1);
+            }
+            QListWidget::item {
+                border-bottom: 1px solid #f8f9fa;
+                padding: 2px;
+            }
+            QListWidget::item:selected {
+                background-color: rgba(0, 120, 212, 0.15);
+                border: 1px solid rgba(0, 120, 212, 0.3);
+                border-radius: 4px;
+            }
+        """)
+        # 設定行高，確保內容不被壓縮
+        self.predictions_list.setUniformItemSizes(False)
         layout.addWidget(self.predictions_list)
         
         # 詳細資訊
         details_group = QGroupBox('預測詳細資訊')
+        details_group.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                font-weight: 600;
+                margin: 8px 0;
+                padding-top: 15px;
+                background-color: white;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 8px 0 8px;
+                color: #495057;
+            }
+        """)
         details_layout = QVBoxLayout(details_group)
         
         self.details_text = QTextEdit()
         self.details_text.setReadOnly(True)
         self.details_text.setMaximumHeight(120)
+        self.details_text.setStyleSheet("""
+            QTextEdit {
+                background-color: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                padding: 8px;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 11px;
+                line-height: 1.4;
+            }
+        """)
         details_layout.addWidget(self.details_text)
         
         layout.addWidget(details_group)
@@ -224,7 +408,10 @@ class PredictionResultDialog(QDialog):
             
             # 創建自訂widget
             widget = self.create_prediction_item_widget(i, pred)
-            item.setSizeHint(widget.sizeHint())
+            
+            # 確保item有足夠的高度來顯示完整內容
+            widget_height = max(widget.sizeHint().height(), 90)
+            item.setSizeHint(QSize(400, widget_height))
             
             self.predictions_list.addItem(item)
             self.predictions_list.setItemWidget(item, widget)
@@ -235,55 +422,128 @@ class PredictionResultDialog(QDialog):
         """創建預測項目widget"""
         widget = QWidget()
         layout = QHBoxLayout(widget)
-        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setContentsMargins(8, 8, 8, 8)  # 增加邊距
+        layout.setSpacing(10)  # 增加組件間距
         
-        # 選擇按鈕組
+        # 設定widget最小高度，避免內容被壓縮
+        widget.setMinimumHeight(90)
+        
+        # 左側：選擇按鈕組（垂直排列）
+        button_widget = QWidget()
+        button_layout = QVBoxLayout(button_widget)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setSpacing(5)
+        
         button_group = QButtonGroup(widget)
         
         accept_rb = QRadioButton('接受')
         accept_rb.setChecked(True)  # 預設接受
         accept_rb.toggled.connect(lambda checked, idx=index: self.on_prediction_decision(idx, 'accept', checked))
+        # 設定按鈕樣式，確保文字不被切割
+        accept_rb.setStyleSheet("""
+            QRadioButton {
+                font-size: 12px;
+                padding: 3px;
+                spacing: 5px;
+            }
+            QRadioButton::indicator {
+                width: 16px;
+                height: 16px;
+            }
+        """)
         button_group.addButton(accept_rb)
-        layout.addWidget(accept_rb)
+        button_layout.addWidget(accept_rb)
         
         reject_rb = QRadioButton('拒絕')
         reject_rb.toggled.connect(lambda checked, idx=index: self.on_prediction_decision(idx, 'reject', checked))
+        reject_rb.setStyleSheet("""
+            QRadioButton {
+                font-size: 12px;
+                padding: 3px;
+                spacing: 5px;
+            }
+            QRadioButton::indicator {
+                width: 16px;
+                height: 16px;
+            }
+        """)
         button_group.addButton(reject_rb)
-        layout.addWidget(reject_rb)
+        button_layout.addWidget(reject_rb)
+        
+        button_layout.addStretch()
+        button_widget.setFixedWidth(70)  # 固定寬度，確保按鈕不被壓縮
+        layout.addWidget(button_widget)
         
         # 分隔線
         separator = QFrame()
         separator.setFrameShape(QFrame.VLine)
         separator.setFrameShadow(QFrame.Sunken)
+        separator.setStyleSheet("QFrame { color: #dee2e6; }")
         layout.addWidget(separator)
         
-        # 預測資訊
-        info_layout = QVBoxLayout()
+        # 右側：預測資訊
+        info_widget = QWidget()
+        info_layout = QVBoxLayout(info_widget)
+        info_layout.setContentsMargins(0, 0, 0, 0)
+        info_layout.setSpacing(6)  # 增加行間距
         
         # 第一行：類別和信心度
         class_conf_layout = QHBoxLayout()
+        class_conf_layout.setContentsMargins(0, 0, 0, 0)
         
+        # 車輛圖示和類別名稱
         class_label = QLabel(f"🚗 {prediction['class_name']}")
-        class_label.setStyleSheet('font-weight: bold; color: #0078d4;')
+        class_label.setStyleSheet("""
+            QLabel {
+                font-weight: bold; 
+                color: #0078d4;
+                font-size: 13px;
+                padding: 2px 0px;
+            }
+        """)
+        # 確保標籤有足夠空間顯示
+        class_label.setMinimumHeight(20)
+        class_label.setSizePolicy(class_label.sizePolicy().Expanding, class_label.sizePolicy().Preferred)
         class_conf_layout.addWidget(class_label)
         
         class_conf_layout.addStretch()
         
+        # 信心度標籤
         confidence = prediction.get('confidence', 0)
-        conf_label = QLabel(f"{confidence:.2%}")
+        conf_label = QLabel(f"{confidence:.1%}")
         conf_color = self.get_confidence_color(confidence)
-        conf_label.setStyleSheet(f'color: {conf_color}; font-weight: bold;')
+        conf_label.setStyleSheet(f"""
+            QLabel {{
+                color: {conf_color}; 
+                font-weight: bold;
+                font-size: 13px;
+                padding: 2px 4px;
+                border-radius: 3px;
+                background-color: rgba(255, 255, 255, 0.8);
+            }}
+        """)
+        conf_label.setMinimumHeight(20)
+        conf_label.setFixedWidth(60)  # 固定寬度避免被壓縮
         class_conf_layout.addWidget(conf_label)
         
         info_layout.addLayout(class_conf_layout)
         
         # 第二行：位置資訊
         bbox = prediction['bbox']
-        pos_label = QLabel(f"位置: ({bbox[0]}, {bbox[1]}) 大小: {bbox[2]}×{bbox[3]}")
-        pos_label.setStyleSheet('color: #888888; font-size: 11px;')
+        pos_text = f"位置: ({bbox[0]}, {bbox[1]}) 大小: {bbox[2]}×{bbox[3]}"
+        pos_label = QLabel(pos_text)
+        pos_label.setStyleSheet("""
+            QLabel {
+                color: #666666; 
+                font-size: 11px;
+                padding: 1px 0px;
+            }
+        """)
+        pos_label.setMinimumHeight(16)
+        pos_label.setWordWrap(True)  # 允許換行
         info_layout.addWidget(pos_label)
         
-        # 第三行：額外資訊
+        # 第三行：額外資訊（圖示和狀態）
         extra_info = []
         if prediction.get('optimized', False):
             extra_info.append('🔧 已優化')
@@ -292,10 +552,23 @@ class PredictionResultDialog(QDialog):
         
         if extra_info:
             extra_label = QLabel(' | '.join(extra_info))
-            extra_label.setStyleSheet('color: #0078d4; font-size: 10px;')
+            extra_label.setStyleSheet("""
+                QLabel {
+                    color: #0078d4; 
+                    font-size: 11px;
+                    padding: 2px 0px;
+                }
+            """)
+            extra_label.setMinimumHeight(16)
+            extra_label.setWordWrap(True)
             info_layout.addWidget(extra_label)
+        else:
+            # 如果沒有額外資訊，添加一個空的佔位符保持佈局一致
+            spacer_label = QLabel("")
+            spacer_label.setMinimumHeight(16)
+            info_layout.addWidget(spacer_label)
         
-        layout.addLayout(info_layout)
+        layout.addWidget(info_widget, 1)  # 給予彈性空間
         
         # 儲存決策狀態
         widget.prediction_index = index
@@ -363,7 +636,7 @@ class PredictionResultDialog(QDialog):
         self.details_text.setPlainText('\n'.join(details))
 
     def update_image_preview(self):
-        """更新圖片預覽"""
+        """更新圖片預覽 - 固定大小，防止亂動"""
         if not self.image_pixmap:
             return
             
@@ -393,15 +666,15 @@ class PredictionResultDialog(QDialog):
         
         painter.end()
         
-        # 縮放圖片以適應顯示區域
-        label_size = self.image_label.size()
+        # 固定縮放圖片到指定大小（400x300），保持縱橫比，防止亂動
+        target_size = QSize(400, 300)
         scaled_pixmap = preview_pixmap.scaled(
-            label_size.width() - 10, 
-            label_size.height() - 10,
+            target_size,
             Qt.KeepAspectRatio, 
             Qt.SmoothTransformation
         )
         
+        # 確保圖片始終居中顯示，不會因為選項改變而移動
         self.image_label.setPixmap(scaled_pixmap)
 
     def draw_prediction_box(self, painter, prediction, color):
@@ -423,16 +696,46 @@ class PredictionResultDialog(QDialog):
         else:
             label_text = prediction['class_name']
         
-        # 標籤背景
+        # 設定字體
+        font = painter.font()
+        font.setPointSize(12)  # 增大字體
+        font.setBold(True)
+        painter.setFont(font)
+        
+        # 計算標籤尺寸
         font_metrics = painter.fontMetrics()
         text_width = font_metrics.horizontalAdvance(label_text)
         text_height = font_metrics.height()
         
-        label_rect = painter.boundingRect(x, y - text_height - 5, text_width + 10, text_height + 5, Qt.AlignLeft, label_text)
+        # 標籤邊距
+        padding = 6
+        label_width = text_width + padding * 2
+        label_height = text_height + padding
+        
+        # 計算標籤位置 (確保在圖片範圍內)
+        label_x = max(0, min(x, self.image_pixmap.width() - label_width))
+        label_y = max(label_height, y)  # 確保標籤不會超出圖片上邊界
+        
+        # 如果標籤會超出邊界框下方，則放在邊界框內部
+        if label_y > y + h:
+            label_y = y + label_height
+        
+        # 標籤背景矩形
+        label_rect = painter.boundingRect(
+            label_x, label_y - label_height, 
+            label_width, label_height, 
+            Qt.AlignCenter, label_text
+        )
+        
+        # 繪製標籤背景
         painter.fillRect(label_rect, QBrush(color))
         
-        # 標籤文字
+        # 繪製標籤邊框
         painter.setPen(QPen(QColor(255, 255, 255), 1))
+        painter.drawRect(label_rect)
+        
+        # 繪製標籤文字
+        painter.setPen(QPen(QColor(255, 255, 255), 2))
         painter.drawText(label_rect, Qt.AlignCenter, label_text)
 
     def update_stats(self):
@@ -501,11 +804,12 @@ AI預測結果說明：
 • 已優化的預測框可能更準確
         """
         
-        from PyQt5.QtWidgets import QMessageBox
         msg = QMessageBox(self)
         msg.setWindowTitle('說明')
         msg.setText(help_text)
         msg.setIcon(QMessageBox.Information)
+        # 設定對話框最小尺寸，避免文字被切割
+        msg.setMinimumSize(400, 300)
         msg.exec_()
 
     def apply_selections(self):

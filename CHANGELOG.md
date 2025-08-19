@@ -13,6 +13,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom model training pipeline
 - Cloud backup integration
 
+## [2.1.1] - 2025-08-19
+
+### Changed
+- 🔧 **Code Structure Optimization**
+  - Removed redundant files and consolidated related functionality
+  - Integrated yolo_exporter.py functionality into advanced_exporter.py
+  - Cleaned up duplicate import statements across all modules
+  - Optimized project file structure from 23 to 20 core files
+
+- 📊 **Performance Improvements**
+  - Reduced memory usage by removing unnecessary module imports
+  - Improved application startup time through import optimization
+  - Enhanced code maintainability with clearer module separation
+  - Implemented automatic __pycache__ cleanup mechanism
+
+### Fixed
+- Fixed duplicate QFileDialog imports in vehicle_class_manager.py (4 instances)
+- Corrected duplicate AdvancedExporter import in main.py
+- Removed redundant QPixmap import in internal functions
+- Resolved import statement redundancies across modules
+
+### Removed
+- Deleted yolo_exporter.py (functionality merged into advanced_exporter.py)
+- Cleaned up __pycache__ directories and compiled Python files
+- Removed duplicate import statements throughout the codebase
+
+## [2.1.0] - 2025-08-19
+
+### Added
+- 🚗 **Custom Vehicle Class Management System**
+  - Complete vehicle type customization beyond fixed categories
+  - Professional vehicle class management dialog
+  - Dynamic vehicle class creation, editing, and deletion
+  - Custom attributes: name, color, emoji, shortcut keys, descriptions
+
+- 📋 **Template System**
+  - Pre-defined vehicle class templates (Basic, Detailed, Transport, Commercial)
+  - Quick template application for different use cases
+  - Template import/export functionality
+
+- 📁 **Import/Export Features**
+  - JSON configuration file support for vehicle classes
+  - YOLO classes.txt file import/export
+  - Cross-project vehicle class settings sharing
+
+- 🎨 **Visual Enhancements**
+  - Emoji-based vehicle type visualization
+  - Custom color system for each vehicle type
+  - Real-time annotation interface updates
+  - Improved vehicle class selection UI
+
+### Changed
+- Breakthrough fixed vehicle type limitations
+- Enhanced annotation interface with custom vehicle types
+- Improved user workflow with customizable shortcuts
+- Better visual feedback with emoji and color coding
+
 ## [2.0.0] - 2025-08-18
 
 ### Added

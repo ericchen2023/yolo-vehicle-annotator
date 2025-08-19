@@ -12,6 +12,14 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
+# 導入樣式表
+try:
+    from styles import get_main_style
+    STYLE_AVAILABLE = True
+except ImportError:
+    STYLE_AVAILABLE = False
+    print("樣式表模組不可用，使用預設樣式")
+
 class AISettingsDialog(QDialog):
     """AI設定對話框"""
     
@@ -21,6 +29,41 @@ class AISettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle('AI輔助設定')
         self.setFixedSize(500, 600)
+        
+        # 設定美觀的現代化樣式
+        if STYLE_AVAILABLE:
+            self.setStyleSheet(get_main_style())
+        else:
+            # 備用樣式
+            self.setStyleSheet("""
+                QDialog {
+                    background-color: #f8f9fa;
+                    color: #495057;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                }
+                
+                QPushButton {
+                    background-color: #339af0;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    font-weight: 500;
+                }
+                
+                QPushButton:hover {
+                    background-color: #228be6;
+                }
+                
+                QGroupBox {
+                    border: 1px solid #dee2e6;
+                    border-radius: 6px;
+                    font-weight: 600;
+                    margin: 8px 0;
+                    padding-top: 10px;
+                    background-color: white;
+                }
+            """)
         
         # 預設設定 (針對車輛檢測優化)
         self.settings = {

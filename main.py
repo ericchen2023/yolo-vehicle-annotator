@@ -14,11 +14,14 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPixmap, QPainter, QPen, QKeySequence, QIcon, QFont
 from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal, QTimer
 
+# 導入樣式表
+from styles import get_main_style, apply_button_class
+
 from annotator import AnnotatorLabel, VEHICLE_CLASSES
-from yolo_exporter import YoloExporter
 from advanced_exporter import AdvancedExporter
 from file_manager import FileManager
 from performance_optimizer import PerformanceOptimizer
+from vehicle_class_manager import VehicleClassManager, VehicleClassManagerDialog
 
 # AI輔助功能 (可選)
 try:
@@ -30,152 +33,222 @@ except ImportError:
     AI_AVAILABLE = False
     print("AI輔助功能不可用，某些功能將被禁用")
 
-# 現代化的樣式表
+# 優化的柔和樣式表
 MODERN_STYLE = """
 QMainWindow {
-    background-color: #1e1e1e;
-    color: #ffffff;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #f8f9fa, stop:1 #e9ecef);
+    color: #495057;
 }
 
 QWidget {
-    background-color: #1e1e1e;
-    color: #ffffff;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    font-size: 12px;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
 }
 
 QPushButton {
-    background-color: #0078d4;
-    border: none;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #4dabf7, stop:1 #339af0);
+    border: 1px solid #74c0fc;
     color: white;
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 10px 18px;
+    border-radius: 8px;
     font-weight: 500;
+    font-size: 14px;
+    min-height: 16px;
 }
 
 QPushButton:hover {
-    background-color: #106ebe;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #339af0, stop:1 #228be6);
+    border-color: #339af0;
+    transform: translateY(-1px);
 }
 
 QPushButton:pressed {
-    background-color: #005a9e;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #228be6, stop:1 #1c7ed6);
+    border-color: #228be6;
 }
 
 QPushButton:disabled {
-    background-color: #404040;
-    color: #808080;
+    background: #e9ecef;
+    border-color: #dee2e6;
+    color: #adb5bd;
 }
 
 QComboBox {
-    background-color: #2d2d30;
-    border: 1px solid #3e3e42;
-    padding: 6px;
-    border-radius: 4px;
-    min-width: 120px;
+    background-color: white;
+    border: 2px solid #e9ecef;
+    padding: 8px 12px;
+    border-radius: 8px;
+    min-width: 140px;
+    min-height: 20px;
+    font-size: 14px;
+}
+
+QComboBox:focus {
+    border-color: #74c0fc;
+    background-color: #f8f9ff;
 }
 
 QComboBox::drop-down {
     border: none;
-    width: 20px;
+    width: 24px;
+    background: transparent;
 }
 
 QComboBox::down-arrow {
     image: none;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 6px solid #ffffff;
-    margin-right: 10px;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #74c0fc;
+    margin-right: 8px;
 }
 
 QComboBox QAbstractItemView {
-    background-color: #2d2d30;
-    border: 1px solid #3e3e42;
-    selection-background-color: #0078d4;
-}
-
-QListWidget {
-    background-color: #252526;
-    border: 1px solid #3e3e42;
-    border-radius: 4px;
+    background-color: white;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    selection-background-color: #e3f2fd;
+    selection-color: #1565c0;
     padding: 4px;
 }
 
-QListWidget::item {
-    padding: 6px;
-    border-radius: 3px;
+QComboBox QAbstractItemView::item {
+    padding: 8px 12px;
+    border-radius: 4px;
     margin: 1px;
 }
 
+QComboBox QAbstractItemView::item:hover {
+    background-color: #f0f8ff;
+}
+
+QListWidget {
+    background-color: white;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 14px;
+}
+
+QListWidget::item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin: 2px 0px;
+    color: #495057;
+}
+
 QListWidget::item:selected {
-    background-color: #0078d4;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #e3f2fd, stop:1 #bbdefb);
+    color: #1565c0;
+    border: 1px solid #90caf9;
 }
 
 QListWidget::item:hover {
-    background-color: #2a2d2e;
+    background-color: #f8f9ff;
+    border: 1px solid #e3f2fd;
 }
 
 QLabel {
-    color: #ffffff;
+    color: #495057;
+    font-size: 14px;
+    padding: 2px;
 }
 
 QGroupBox {
-    font-weight: bold;
-    border: 2px solid #3e3e42;
-    border-radius: 6px;
-    margin: 6px 0px;
-    padding-top: 6px;
+    font-weight: 600;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    margin: 12px 4px;
+    padding-top: 12px;
+    background-color: white;
+    font-size: 15px;
 }
 
 QGroupBox::title {
     subcontrol-origin: margin;
-    left: 10px;
-    padding: 0 8px 0 8px;
-    color: #ffffff;
+    left: 16px;
+    padding: 4px 12px;
+    color: #495057;
+    background-color: white;
+    border-radius: 6px;
 }
 
 QProgressBar {
-    background-color: #2d2d30;
-    border: 1px solid #3e3e42;
-    border-radius: 4px;
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
     text-align: center;
+    color: #495057;
+    font-weight: 500;
+    min-height: 20px;
 }
 
 QProgressBar::chunk {
-    background-color: #0078d4;
-    border-radius: 3px;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 #4dabf7, stop:1 #339af0);
+    border-radius: 6px;
+    margin: 2px;
 }
 
 QStatusBar {
-    background-color: #2d2d30;
-    border-top: 1px solid #3e3e42;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #f8f9fa, stop:1 #e9ecef);
+    border-top: 1px solid #dee2e6;
+    padding: 4px;
+    font-size: 13px;
+}
+
+QStatusBar QLabel {
+    padding: 4px 8px;
+    background-color: transparent;
+    border-radius: 4px;
+    margin: 0px 2px;
 }
 
 QToolBar {
-    background-color: #2d2d30;
-    border: 1px solid #3e3e42;
-    spacing: 4px;
-    padding: 4px;
-    min-height: 40px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #ffffff, stop:1 #f8f9fa);
+    border: 1px solid #dee2e6;
+    spacing: 6px;
+    padding: 8px;
+    min-height: 48px;
+    border-radius: 8px;
+    margin: 2px;
 }
 
 QToolBar::separator {
-    background-color: #3e3e42;
+    background-color: #dee2e6;
     width: 1px;
-    margin: 4px 2px;
+    margin: 8px 4px;
+    border-radius: 1px;
 }
 
 QToolBar QAction {
-    padding: 6px 12px;
+    padding: 10px 16px;
     margin: 2px;
-    border-radius: 4px;
+    border-radius: 8px;
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 QToolBar QAction:hover {
-    background-color: #3e3e42;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #f0f8ff, stop:1 #e3f2fd);
+    color: #1565c0;
 }
 
 QToolBar QAction:pressed {
-    background-color: #0078d4;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 #bbdefb, stop:1 #90caf9);
+    color: #0d47a1;
 }
 
 QToolBar QAction:checked {
@@ -212,7 +285,6 @@ QSpinBox {
     padding: 4px;
     border-radius: 4px;
     min-width: 60px;
-}
 """
 
 
@@ -231,6 +303,10 @@ class MainWindow(QMainWindow):
         self.advanced_exporter = AdvancedExporter()
         self.file_manager = FileManager()
         self.performance_optimizer = PerformanceOptimizer(os.getcwd())
+        
+        # 初始化車種管理器
+        self.vehicle_class_manager = VehicleClassManager()
+        self.current_vehicle_classes = self.vehicle_class_manager.get_classes_for_combo()
         
         # 初始化AI輔助功能 (如果可用)
         self.ai_assistant = None
@@ -255,7 +331,8 @@ class MainWindow(QMainWindow):
         # 連接效能優化信號
         self.performance_optimizer.image_loader.image_loaded.connect(self.on_image_loaded_async)
         # 設定現代化樣式
-        self.setStyleSheet(MODERN_STYLE)
+        # 設定美觀的現代化樣式
+        self.setStyleSheet(get_main_style())
         
         self.setup_ui()
         self.setup_shortcuts()
@@ -375,6 +452,15 @@ class MainWindow(QMainWindow):
             
             ai_toolbar.addSeparator()
         
+        # 車種管理
+        self.vehicle_class_action = QAction('🚗 車種管理', self)
+        self.vehicle_class_action.setShortcut(QKeySequence('Ctrl+V'))
+        self.vehicle_class_action.setStatusTip('管理車種類別 (Ctrl+V)')
+        self.vehicle_class_action.triggered.connect(self.show_vehicle_class_manager)
+        ai_toolbar.addAction(self.vehicle_class_action)
+        
+        ai_toolbar.addSeparator()
+        
         # 專案管理
         self.recent_files_action = QAction('📋 最近檔案', self)
         self.recent_files_action.setShortcut(QKeySequence('Ctrl+H'))
@@ -441,6 +527,26 @@ class MainWindow(QMainWindow):
         self.reset_view_action.triggered.connect(self.reset_view)
         view_toolbar.addAction(self.reset_view_action)
         
+        # 分隔線
+        view_toolbar.addSeparator()
+        
+        # 標籤顯示選項
+        view_toolbar.addWidget(QLabel('標籤: '))
+        
+        # 顯示ID的checkbox
+        self.show_ids_checkbox = QCheckBox('ID')
+        self.show_ids_checkbox.setChecked(True)
+        self.show_ids_checkbox.setStatusTip('顯示/隱藏標註框的ID編號')
+        self.show_ids_checkbox.stateChanged.connect(self.toggle_show_ids)
+        view_toolbar.addWidget(self.show_ids_checkbox)
+        
+        # 顯示分類的checkbox
+        self.show_classes_checkbox = QCheckBox('分類')
+        self.show_classes_checkbox.setChecked(True)
+        self.show_classes_checkbox.setStatusTip('顯示/隱藏標註框的分類名稱')
+        self.show_classes_checkbox.stateChanged.connect(self.toggle_show_classes)
+        view_toolbar.addWidget(self.show_classes_checkbox)
+        
         # 添加可伸縮空間，讓工具列更美觀
         # 添加可伸縮空間，讓工具列更美觀
         spacer = QWidget()
@@ -485,6 +591,11 @@ class MainWindow(QMainWindow):
         self.annotator = AnnotatorLabel(self)
         self.annotator.rects_updated.connect(self.update_rect_list)
         self.annotator.rects_updated.connect(self.update_toolbar_states)  # 更新工具列狀態
+        
+        # 初始化車種顏色映射
+        colors = self.vehicle_class_manager.get_class_colors()
+        self.annotator.update_class_colors(colors)
+        
         main_splitter.addWidget(self.annotator)
         
         # 右側面板
@@ -520,8 +631,7 @@ class MainWindow(QMainWindow):
         annotation_layout.addWidget(class_label)
         
         self.class_combo = QComboBox()
-        for name, cid in VEHICLE_CLASSES:
-            self.class_combo.addItem(name, cid)
+        self.update_class_combo()
         self.class_combo.currentIndexChanged.connect(self.change_class)
         annotation_layout.addWidget(self.class_combo)
         
@@ -747,6 +857,20 @@ class MainWindow(QMainWindow):
             self.zoom_slider.setValue(100)
             self.zoom_spinbox.setValue(100)
             self.update_scale_label()
+
+    def toggle_show_ids(self, state):
+        """切換顯示ID"""
+        show_ids = state == Qt.Checked
+        self.annotator.set_show_ids(show_ids)
+        status_msg = f"{'顯示' if show_ids else '隱藏'}標註框ID"
+        self.statusBar().showMessage(status_msg, 2000)
+
+    def toggle_show_classes(self, state):
+        """切換顯示分類"""
+        show_classes = state == Qt.Checked
+        self.annotator.set_show_classes(show_classes)
+        status_msg = f"{'顯示' if show_classes else '隱藏'}標註框分類"
+        self.statusBar().showMessage(status_msg, 2000)
 
     def toggle_fullscreen(self):
         """切換全螢幕模式"""
@@ -1028,13 +1152,80 @@ class MainWindow(QMainWindow):
             self.image_size_label.setText('尺寸: -')
 
     def quick_change_class(self, class_index):
-        if 0 <= class_index < len(VEHICLE_CLASSES):
+        if 0 <= class_index < len(self.current_vehicle_classes):
             self.class_combo.setCurrentIndex(class_index)
 
     def change_class(self, idx):
-        class_id = self.class_combo.itemData(idx)
-        class_name = self.class_combo.currentText()
-        self.annotator.set_class(class_id, class_name)
+        if idx < len(self.current_vehicle_classes):
+            class_name, class_id = self.current_vehicle_classes[idx]
+            self.annotator.set_class(class_id, class_name)
+    
+    def update_class_combo(self):
+        """更新車種下拉選單"""
+        self.class_combo.clear()
+        self.current_vehicle_classes = self.vehicle_class_manager.get_classes_for_combo()
+        
+        for name, class_id in self.current_vehicle_classes:
+            # 取得車種物件以獲取表情符號
+            vehicle_class = self.vehicle_class_manager.get_class(class_id)
+            if vehicle_class:
+                display_name = f"{vehicle_class.emoji} {name}"
+                self.class_combo.addItem(display_name, class_id)
+            else:
+                self.class_combo.addItem(name, class_id)
+        
+        # 更新 annotator 的顏色映射（如果已經初始化）
+        if hasattr(self, 'annotator') and hasattr(self.annotator, 'update_class_colors'):
+            colors = self.vehicle_class_manager.get_class_colors()
+            self.annotator.update_class_colors(colors)
+    
+    def show_vehicle_class_manager(self):
+        """顯示車種管理對話框"""
+        dialog = VehicleClassManagerDialog(self.vehicle_class_manager, self)
+        dialog.classes_updated.connect(self.on_vehicle_classes_updated)
+        dialog.exec_()
+    
+    def on_vehicle_classes_updated(self):
+        """車種類別更新時的回調函數"""
+        # 更新下拉選單
+        self.update_class_combo()
+        
+        # 更新 annotator 的顏色映射（如果已經初始化）
+        if hasattr(self, 'annotator') and hasattr(self.annotator, 'update_class_colors'):
+            colors = self.vehicle_class_manager.get_class_colors()
+            self.annotator.update_class_colors(colors)
+        
+        # 匯出更新的 classes.txt
+        self.vehicle_class_manager.export_classes_txt('classes.txt')
+        
+        # 更新快捷鍵（如果需要）
+        self.update_class_shortcuts()
+        
+        self.statusBar().showMessage('車種類別已更新', 3000)
+    
+    def update_class_shortcuts(self):
+        """更新車種快捷鍵"""
+        # 移除舊的快捷鍵
+        for i in range(10):  # 支援0-9的快捷鍵
+            shortcut_key = str(i) if i > 0 else "0"
+            shortcuts = [s for s in self.findChildren(QShortcut) 
+                        if s.key().toString() == shortcut_key]
+            for shortcut in shortcuts:
+                shortcut.deleteLater()
+        
+        # 添加新的快捷鍵
+        classes = self.vehicle_class_manager.get_all_classes(enabled_only=True)
+        for vehicle_class in classes:
+            if vehicle_class.shortcut_key and vehicle_class.shortcut_key.isdigit():
+                index = None
+                for i, (name, class_id) in enumerate(self.current_vehicle_classes):
+                    if class_id == vehicle_class.class_id:
+                        index = i
+                        break
+                
+                if index is not None:
+                    shortcut = QShortcut(QKeySequence(vehicle_class.shortcut_key), self)
+                    shortcut.activated.connect(lambda idx=index: self.quick_change_class(idx))
 
     def delete_selected_annotation(self):
         """刪除選中的標註"""
@@ -1181,9 +1372,12 @@ class MainWindow(QMainWindow):
         
         for item in annotations:
             rect = item['rect']
+            class_id = item['class_id']
             class_name = item['class_name']
-            # 使用對應的表情符號
-            emoji = {'機車': '🏍', '汽車': '🚗', '卡車': '🚛', '公車': '🚌'}.get(class_name, '🚗')
+            
+            # 取得車種的表情符號
+            vehicle_class = self.vehicle_class_manager.get_class(class_id)
+            emoji = vehicle_class.emoji if vehicle_class else '🚗'
             
             list_text = f"ID:{item['id']} {emoji} {class_name} ({rect.x()}, {rect.y()}, {rect.width()}×{rect.height()})"
             self.rect_list.addItem(list_text)
@@ -1192,12 +1386,14 @@ class MainWindow(QMainWindow):
         if annotations:
             class_counts = {}
             for item in annotations:
+                class_id = item['class_id']
                 class_name = item['class_name']
-                class_counts[class_name] = class_counts.get(class_name, 0) + 1
+                class_counts[class_id] = class_counts.get(class_id, 0) + 1
             
             stats_parts = []
-            for cls, count in class_counts.items():
-                emoji = {'機車': '🏍', '汽車': '🚗', '卡車': '🚛', '公車': '🚌'}.get(cls, '🚗')
+            for class_id, count in class_counts.items():
+                vehicle_class = self.vehicle_class_manager.get_class(class_id)
+                emoji = vehicle_class.emoji if vehicle_class else '🚗'
                 stats_parts.append(f'{emoji}{count}')
             
             stats_text = f'統計: {" | ".join(stats_parts)} (總計: {len(annotations)})'
@@ -1220,7 +1416,8 @@ class MainWindow(QMainWindow):
             return
         
         try:
-            label_path = YoloExporter.export_annotations(
+            exporter = AdvancedExporter()
+            success = exporter.export_yolo(
                 self.image_path, 
                 self.annotator.get_rects(), 
                 'labels'
@@ -1228,12 +1425,15 @@ class MainWindow(QMainWindow):
             
             # 同時匯出類別檔案
             classes_path = os.path.join('labels', 'classes.txt')
-            YoloExporter.export_classes_file(classes_path)
+            exporter.export_classes_file('labels')
             
-            QMessageBox.information(
-                self, '匯出成功', 
-                f'標註已匯出至: {label_path}\n類別檔案: {classes_path}'
-            )
+            if success:
+                QMessageBox.information(
+                    self, '匯出成功', 
+                    f'標註已匯出至: labels/ 目錄\n類別檔案: {classes_path}'
+                )
+            else:
+                QMessageBox.warning(self, '匯出警告', '部分檔案匯出失敗，請檢查logs')
         except Exception as e:
             QMessageBox.critical(self, '匯出失敗', f'匯出過程發生錯誤：{str(e)}')
 
@@ -1269,22 +1469,24 @@ class MainWindow(QMainWindow):
                 annotations = self.annotations_cache.get(image_path, [])
                 if annotations:
                     try:
-                        YoloExporter.export_annotations(image_path, annotations, 'labels')
-                        exported_count += 1
+                        exporter = AdvancedExporter()
+                        success = exporter.export_yolo(image_path, annotations, 'labels')
+                        if success:
+                            exported_count += 1
                     except Exception as e:
                         print(f"匯出 {image_path} 時發生錯誤: {e}")
                         continue
             
             # 匯出類別檔案
-            classes_path = os.path.join('labels', 'classes.txt')
-            YoloExporter.export_classes_file(classes_path)
+            exporter = AdvancedExporter()
+            exporter.export_classes_file('labels')
             
         finally:
             self.progress_bar.setVisible(False)
             
         QMessageBox.information(
             self, '批次匯出完成', 
-            f'已匯出 {exported_count} 個標註檔案\n類別檔案: {classes_path}'
+            f'已匯出 {exported_count} 個標註檔案\n類別檔案: labels/classes.txt'
         )
     
     def show_advanced_export_dialog(self):
@@ -2071,7 +2273,6 @@ def on_ai_prediction_ready(self, image_path, predictions):
     else:
         # 如果annotator中沒有圖片，嘗試直接載入
         try:
-            from PyQt5.QtGui import QPixmap
             image_pixmap = QPixmap(image_path)
         except Exception as e:
             print(f"載入圖片預覽失敗: {e}")

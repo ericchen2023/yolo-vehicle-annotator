@@ -1,4 +1,4 @@
-﻿motorbike
-car
-truck
-bus
+機車
+汽車
+卡車
+公車

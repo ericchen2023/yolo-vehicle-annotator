@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5.QtGui import QPainter, QPen, QPixmap, QColor, QCursor, QFont, QBrush
 from PyQt5.QtCore import Qt, QRect, pyqtSignal, QPoint
 
+# 預設車種類別（向後相容）
 VEHICLE_CLASSES = [
     ('機車', 0),
     ('汽車', 1),
@@ -9,8 +10,8 @@ VEHICLE_CLASSES = [
     ('公車', 3)
 ]
 
-# 不同車種的顏色 - 參考 Roboflow 的配色
-CLASS_COLORS = {
+# 預設車種顏色映射
+DEFAULT_CLASS_COLORS = {
     0: QColor(255, 75, 75),    # 機車 - 亮紅色
     1: QColor(75, 255, 75),    # 汽車 - 亮綠色
     2: QColor(75, 150, 255),   # 卡車 - 亮藍色
@@ -47,6 +48,14 @@ class AnnotatorLabel(QLabel):
         self.selected_rect_id = None
         self.hover_rect_id = None
         
+        # 車種顏色映射（可動態更新）
+        self.class_colors = DEFAULT_CLASS_COLORS.copy()
+        
+        # 顯示選項
+        self.show_labels = True  # 顯示ID和分類標籤
+        self.show_ids = True     # 顯示ID
+        self.show_classes = True # 顯示分類名稱
+        
         # 標註框編輯功能
         self.editing_mode = None  # None, 'move', 'resize_tl', 'resize_tr', 'resize_bl', 'resize_br', 'resize_t', 'resize_b', 'resize_l', 'resize_r'
         self.edit_start_point = None
@@ -61,6 +70,30 @@ class AnnotatorLabel(QLabel):
             }
         """)
 
+    def update_class_colors(self, color_mapping):
+        """更新車種顏色映射"""
+        self.class_colors.update(color_mapping)
+        self.repaint()  # 重新繪製以應用新顏色
+    
+    def get_class_color(self, class_id):
+        """取得車種顏色"""
+        return self.class_colors.get(class_id, QColor(255, 75, 75))
+    
+    def set_show_labels(self, show_labels):
+        """設定是否顯示標籤"""
+        self.show_labels = show_labels
+        self.repaint()
+    
+    def set_show_ids(self, show_ids):
+        """設定是否顯示ID"""
+        self.show_ids = show_ids
+        self.repaint()
+    
+    def set_show_classes(self, show_classes):
+        """設定是否顯示分類名稱"""
+        self.show_classes = show_classes
+        self.repaint()
+    
     def set_image(self, image_input, image_path=None):
         # 支持兩種輸入：圖片路徑字符串或QPixmap/QImage對象
         if isinstance(image_input, str):
@@ -491,7 +524,7 @@ class AnnotatorLabel(QLabel):
         
         # 繪製正在繪製的標註框
         if self.current_rect:
-            color = CLASS_COLORS.get(self.class_id, QColor(255, 75, 75))
+            color = self.get_class_color(self.class_id)
             pen = QPen(color, 2, Qt.DashLine)
             painter.setPen(pen)
             # 確保正在繪製的標註框也不填充
@@ -501,7 +534,7 @@ class AnnotatorLabel(QLabel):
 
     def draw_annotation(self, painter, item, image_rect):
         """繪製單個標註"""
-        base_color = CLASS_COLORS.get(item['class_id'], QColor(255, 75, 75))
+        base_color = self.get_class_color(item['class_id'])
         
         # 判斷標註狀態
         is_selected = item['id'] == self.selected_rect_id
@@ -533,30 +566,40 @@ class AnnotatorLabel(QLabel):
             self.draw_resize_handles(painter, widget_rect, base_color)
         
         # 繪製標籤背景（使用原始顏色，確保標籤清晰）
-        font = QFont("Arial", max(8, int(10 * self.scale_factor)))
-        painter.setFont(font)
-        
-        label_text = f"ID:{item['id']} {item['class_name']}"
-        text_rect = painter.fontMetrics().boundingRect(label_text)
-        
-        # 標籤背景位置
-        label_bg = QRect(
-            widget_rect.x(),
-            widget_rect.y() - text_rect.height() - 4,
-            text_rect.width() + 8,
-            text_rect.height() + 4
-        )
-        
-        # 使用原始顏色繪製標籤背景（確保不透明）
-        label_color = QColor(base_color)
-        label_color.setAlpha(255)  # 確保標籤背景完全不透明
-        painter.fillRect(label_bg, label_color)
-        
-        # 繪製標籤文字
-        painter.setPen(QPen(Qt.white, 1))
-        text_x = label_bg.x() + 4
-        text_y = label_bg.y() + text_rect.height() + 2
-        painter.drawText(text_x, text_y, label_text)
+        if self.show_labels and (self.show_ids or self.show_classes):
+            # 構建標籤文字
+            label_parts = []
+            if self.show_ids:
+                label_parts.append(f"ID:{item['id']}")
+            if self.show_classes:
+                label_parts.append(item['class_name'])
+            
+            if label_parts:  # 只有當有內容要顯示時才繪製標籤
+                label_text = " ".join(label_parts)
+                
+                font = QFont("Arial", max(8, int(10 * self.scale_factor)))
+                painter.setFont(font)
+                
+                text_rect = painter.fontMetrics().boundingRect(label_text)
+                
+                # 標籤背景位置
+                label_bg = QRect(
+                    widget_rect.x(),
+                    widget_rect.y() - text_rect.height() - 4,
+                    text_rect.width() + 8,
+                    text_rect.height() + 4
+                )
+                
+                # 使用原始顏色繪製標籤背景（確保不透明）
+                label_color = QColor(base_color)
+                label_color.setAlpha(255)  # 確保標籤背景完全不透明
+                painter.fillRect(label_bg, label_color)
+                
+                # 繪製標籤文字
+                painter.setPen(QPen(Qt.white, 1))
+                text_x = label_bg.x() + 4
+                text_y = label_bg.y() + text_rect.height() + 2
+                painter.drawText(text_x, text_y, label_text)
         
     def draw_resize_handles(self, painter, rect, color):
         """繪製調整手柄"""

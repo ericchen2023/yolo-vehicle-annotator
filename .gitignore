@@ -157,11 +157,23 @@ config/
 models/
 
 # 圖片和標註檔案 (測試用途，實際專案可能需要保留)
-images/
+# images/  # 註解掉以允許測試圖片上傳
 labels/
 exports/
 test_images/
 temp/
+
+# 但是排除大量圖片檔案
+images/*.jpg
+images/*.jpeg
+images/*.png
+images/*.bmp
+images/*.tiff
+images/*.gif
+# 但允許特定的測試圖片
+!images/test1.jpg
+!images/test2.png
+!images/test3.png
 
 # 快取檔案
 cache/
