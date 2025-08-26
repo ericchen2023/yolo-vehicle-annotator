@@ -28,6 +28,7 @@ try:
     from ai_assistant import AIAssistant
     from ai_settings_dialog import AISettingsDialog
     from ai_prediction_dialog import PredictionResultDialog
+    from model_selector_dialog import ModelSelectorDialog
     AI_AVAILABLE = True
 except ImportError:
     AI_AVAILABLE = False
@@ -310,13 +311,15 @@ class MainWindow(QMainWindow):
         
         # 初始化AI輔助功能 (如果可用)
         self.ai_assistant = None
+        self.current_model_variant = 'm'  # 預設使用 medium 模型
         self.ai_settings = {
             'enabled': False,
             'confidence_threshold': 0.5,
             'iou_threshold': 0.45,
             'auto_optimize_bbox': True,
             'filter_overlapping': True,
-            'model_path': '',
+            'model_path': f'yolov8{self.current_model_variant}.pt',
+            'model_variant': self.current_model_variant,
             'use_custom_model': False,
             'batch_size': 1,
             'device': 'auto'
@@ -326,7 +329,14 @@ class MainWindow(QMainWindow):
             self.ai_assistant = AIAssistant()
             self.ai_assistant.prediction_ready.connect(self.on_ai_prediction_ready)
             self.ai_assistant.status_updated.connect(self.on_ai_status_updated)
-            self.ai_settings['enabled'] = True
+            
+            # 嘗試初始化預設模型
+            model_path = self.ai_settings['model_path']
+            if self.ai_assistant.initialize(model_path):
+                self.ai_settings['enabled'] = True
+                self.statusBar().showMessage(f'AI功能已就緒，使用 YOLOv8{self.current_model_variant.upper()} 模型', 3000)
+            else:
+                self.statusBar().showMessage('AI模型未載入，請選擇模型', 3000)
         
         # 連接效能優化信號
         self.performance_optimizer.image_loader.image_loaded.connect(self.on_image_loaded_async)
@@ -437,12 +447,20 @@ class MainWindow(QMainWindow):
             self.ai_predict_action.setEnabled(False)
             ai_toolbar.addAction(self.ai_predict_action)
             
-            self.ai_batch_action = QAction('� 批次AI', self)
+            self.ai_batch_action = QAction('🔄 批次AI', self)
             self.ai_batch_action.setShortcut(QKeySequence('Ctrl+F5'))
             self.ai_batch_action.setStatusTip('AI批次處理所有圖片 (Ctrl+F5)')
             self.ai_batch_action.triggered.connect(self.ai_predict_batch)
             self.ai_batch_action.setEnabled(False)
             ai_toolbar.addAction(self.ai_batch_action)
+            
+            ai_toolbar.addSeparator()
+            
+            self.model_select_action = QAction('🧠 選擇模型', self)
+            self.model_select_action.setShortcut(QKeySequence('F4'))
+            self.model_select_action.setStatusTip('選擇YOLOv8模型版本 (F4)')
+            self.model_select_action.triggered.connect(self.show_model_selector)
+            ai_toolbar.addAction(self.model_select_action)
             
             self.ai_settings_action = QAction('⚙ AI設定', self)
             self.ai_settings_action.setShortcut(QKeySequence('F6'))
@@ -938,6 +956,7 @@ class MainWindow(QMainWindow):
 • Home: 重置視圖
 
 🤖 AI功能:
+• F4: 選擇YOLOv8模型
 • F5: AI預測當前圖片
 • Ctrl+F5: AI批次處理
 • F6: AI設定
@@ -1733,6 +1752,106 @@ class MainWindow(QMainWindow):
             'total_annotations': total_annotations,
             'class_counts': class_counts,
             'last_updated': datetime.now().isoformat()
+        }
+    
+    def show_model_selector(self):
+        """顯示模型選擇對話框"""
+        if not AI_AVAILABLE:
+            QMessageBox.warning(
+                self, '功能不可用',
+                'AI功能不可用，請先安裝 ultralytics 套件。\n\n'
+                '安裝命令: pip install ultralytics'
+            )
+            return
+        
+        dialog = ModelSelectorDialog(self)
+        
+        if dialog.exec_() == QDialog.Accepted:
+            selected_model = dialog.get_selected_model()
+            model_path = dialog.get_model_path()
+            
+            if selected_model and model_path:
+                # 更新AI設定
+                self.current_model_variant = selected_model
+                self.ai_settings['model_variant'] = selected_model
+                self.ai_settings['model_path'] = model_path
+                
+                # 重新初始化AI助手
+                if self.ai_assistant:
+                    success = self.ai_assistant.initialize(model_path)
+                    if success:
+                        self.ai_settings['enabled'] = True
+                        self.statusBar().showMessage(
+                            f'已切換至 YOLOv8{selected_model.upper()} 模型', 3000
+                        )
+                        
+                        # 更新AI功能按鈕狀態
+                        self.update_ai_button_states()
+                        
+                        # 顯示模型資訊
+                        model_info = dialog.MODEL_INFO[selected_model]
+                        QMessageBox.information(
+                            self, '模型切換成功',
+                            f'✅ 已成功切換至 YOLOv8{selected_model.upper()} 模型\n\n'
+                            f'📋 模型名稱: {model_info["name"]}\n'
+                            f'📦 檔案大小: {model_info["size"]}\n'
+                            f'⚡ 執行速度: {model_info["speed"]}\n'
+                            f'🎯 檢測精確度: {model_info["accuracy"]}\n'
+                            f'🧠 記憶體需求: {model_info["memory"]}\n\n'
+                            f'💡 適用場景: {model_info["use_case"]}'
+                        )
+                    else:
+                        QMessageBox.critical(
+                            self, '模型載入失敗',
+                            f'❌ 無法載入 YOLOv8{selected_model.upper()} 模型\n\n'
+                            '可能原因:\n'
+                            '• 模型檔案損壞或不完整\n'
+                            '• 記憶體不足\n'
+                            '• CUDA 驅動問題\n\n'
+                            '建議: 嘗試重新下載模型或選擇較小的模型版本'
+                        )
+                else:
+                    # 如果AI助手未初始化，先初始化
+                    if AI_AVAILABLE:
+                        from ai_assistant import AIAssistant
+                        self.ai_assistant = AIAssistant()
+                        self.ai_assistant.prediction_ready.connect(self.on_ai_prediction_ready)
+                        self.ai_assistant.status_updated.connect(self.on_ai_status_updated)
+                        
+                        success = self.ai_assistant.initialize(model_path)
+                        if success:
+                            self.ai_settings['enabled'] = True
+                            self.statusBar().showMessage(
+                                f'AI功能已啟用，使用 YOLOv8{selected_model.upper()} 模型', 3000
+                            )
+                            self.update_ai_button_states()
+                        else:
+                            QMessageBox.critical(
+                                self, '初始化失敗',
+                                '❌ AI功能初始化失敗\n\n'
+                                '請檢查:\n'
+                                '• 模型檔案是否存在\n'
+                                '• 是否有足夠記憶體\n'
+                                '• ultralytics 套件是否正確安裝'
+                            )
+    
+    def update_ai_button_states(self):
+        """更新AI功能按鈕狀態"""
+        has_image = bool(self.image_path)
+        has_images = len(self.image_list) > 0
+        ai_enabled = self.ai_settings.get('enabled', False)
+        
+        if hasattr(self, 'ai_predict_action'):
+            self.ai_predict_action.setEnabled(has_image and ai_enabled)
+        if hasattr(self, 'ai_batch_action'):
+            self.ai_batch_action.setEnabled(has_images and ai_enabled)
+    
+    def get_current_model_info(self):
+        """獲取當前模型資訊"""
+        return {
+            'variant': self.current_model_variant,
+            'path': self.ai_settings.get('model_path', ''),
+            'enabled': self.ai_settings.get('enabled', False)
         }
 
 

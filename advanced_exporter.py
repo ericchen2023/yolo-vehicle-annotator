@@ -1,6 +1,7 @@
 """
 進階匯出模組 - 支援多種格式匯出
 支援格式：YOLO、COCO、Pascal VOC、JSON
+v2.1.3 更新：提升座標精確度至12位小數點
 """
 
 import os
@@ -53,7 +54,7 @@ class AdvancedExporter:
                     width = w / img_width
                     height = h / img_height
                     
-                    f.write(f"{class_id} {center_x:.6f} {center_y:.6f} {width:.6f} {height:.6f}\n")
+                    f.write(f"{class_id} {center_x:.12f} {center_y:.12f} {width:.12f} {height:.12f}\n")
                     
             return True
         except Exception as e:
@@ -122,8 +123,8 @@ class AdvancedExporter:
                         "id": annotation_id,
                         "image_id": img_id,
                         "category_id": class_id + 1,
-                        "bbox": [x, y, w, h],  # COCO格式：[x, y, width, height]
-                        "area": w * h,
+                        "bbox": [round(x, 12), round(y, 12), round(w, 12), round(h, 12)],  # COCO格式：[x, y, width, height]
+                        "area": round(w * h, 12),
                         "iscrowd": 0
                     })
                     annotation_id += 1
@@ -247,21 +248,25 @@ class AdvancedExporter:
                 class_id = rect['class']
                 x, y, w, h = rect['bbox']
                 
+                # 計算精確的中心點座標（保持高精確度）
+                center_x = round(x + w / 2, 12)
+                center_y = round(y + h / 2, 12)
+                
                 annotation_data = {
                     "id": idx + 1,
                     "class_id": class_id,
                     "class_name_zh": self.vehicle_classes[class_id]['zh'],
                     "class_name_en": self.vehicle_classes[class_id]['en'],
                     "bbox": {
-                        "x": x,
-                        "y": y,
-                        "width": w,
-                        "height": h
+                        "x": round(x, 12),
+                        "y": round(y, 12),
+                        "width": round(w, 12),
+                        "height": round(h, 12)
                     },
-                    "area": w * h,
+                    "area": round(w * h, 12),
                     "center": {
-                        "x": x + w / 2,
-                        "y": y + h / 2
+                        "x": center_x,
+                        "y": center_y
                     }
                 }
                 json_data["annotations"].append(annotation_data)

@@ -13,6 +13,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom model training pipeline
 - Cloud backup integration
 
+## [2.1.3] - 2025-08-26
+
+### Added
+- 🧠 **YOLOv8 Model Selection System**
+  - Interactive model selection dialog with five YOLOv8 variants (nano, small, medium, large, extra-large)
+  - Detailed model information cards showing performance metrics, file sizes, and use cases
+  - Automatic model download functionality with progress tracking
+  - Responsive dialog design that adapts to different screen sizes
+  - Model validation and input verification
+  - Integration with AI assistant for seamless model switching
+
+### Changed
+- 🎯 **Enhanced Export Precision**
+  - Improved annotation coordinate precision from 6 to 12 decimal places in YOLO format
+  - Enhanced JSON format with 12-decimal precision for all coordinate values
+  - Updated COCO format with high-precision coordinate handling
+  - Added precision testing suite to verify export accuracy
+
+### Technical Details
+- **Model Selection**: Five YOLOv8 variants available with automatic download and hardware-based recommendations
+- **Export Precision**: YOLO format outputs coordinates with `.12f` precision, JSON/COCO formats apply `round(value, 12)`
+- **User Interface**: Responsive model selection dialog accessible via F4 shortcut key
+- **AI Integration**: Seamless model switching integrated with AI assistant functionality
+
+## [2.1.2] - 2025-08-19
+
+### Changed
+- 🔧 **Export System Fixes**
+  - Unified all YOLO exports to `exports/yolo/` directory
+  - Automatic directory creation during export process
+  - Fixed annotation format conversion issues for accurate export files
+  - Improved error handling and messaging in export process
+
+### Fixed
+- Fixed `[Errno 2] No such file or directory: 'labels\test2.txt'` error
+- Corrected empty export file issues
+- Resolved inconsistent export path problems
+
 ## [2.1.1] - 2025-08-19
 
 ### Changed
