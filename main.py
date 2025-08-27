@@ -34,6 +34,15 @@ except ImportError:
     AI_AVAILABLE = False
     print("AI輔助功能不可用，某些功能將被禁用")
 
+# 模型訓練功能 (可選)
+try:
+    from training_dialog import ModelTrainingDialog
+    from custom_model_trainer import TrainingConfig, DatasetPreparer, ModelTrainer
+    TRAINING_AVAILABLE = True
+except ImportError:
+    TRAINING_AVAILABLE = False
+    print("模型訓練功能不可用，某些功能將被禁用")
+
 # 優化的柔和樣式表
 MODERN_STYLE = """
 QMainWindow {
@@ -467,6 +476,16 @@ class MainWindow(QMainWindow):
             self.ai_settings_action.setStatusTip('AI參數設定 (F6)')
             self.ai_settings_action.triggered.connect(self.show_ai_settings)
             ai_toolbar.addAction(self.ai_settings_action)
+            
+            ai_toolbar.addSeparator()
+        
+        # 模型訓練功能
+        if TRAINING_AVAILABLE:
+            self.training_action = QAction('🏋️ 自訂訓練', self)
+            self.training_action.setShortcut(QKeySequence('F3'))
+            self.training_action.setStatusTip('自訂模型訓練 (F3)')
+            self.training_action.triggered.connect(self.show_training_dialog)
+            ai_toolbar.addAction(self.training_action)
             
             ai_toolbar.addSeparator()
         
@@ -956,6 +975,7 @@ class MainWindow(QMainWindow):
 • Home: 重置視圖
 
 🤖 AI功能:
+• F3: 自訂模型訓練
 • F4: 選擇YOLOv8模型
 • F5: AI預測當前圖片
 • Ctrl+F5: AI批次處理
@@ -2297,6 +2317,45 @@ def extend_main_window():
 # =============== AI輔助功能方法 ===============
 # =============== AI輔助功能方法 ===============
 
+def show_training_dialog(self):
+    """顯示模型訓練對話框"""
+    if not TRAINING_AVAILABLE:
+        QMessageBox.warning(
+            self, '功能不可用',
+            '模型訓練功能不可用。\n\n'
+            '請確保已安裝必要的套件：\n'
+            '• pip install ultralytics\n'
+            '• pip install torch torchvision\n'
+            '• pip install matplotlib seaborn\n\n'
+            '或者檢查 training_dialog.py 和 custom_model_trainer.py 檔案是否存在。'
+        )
+        return
+    
+    # 檢查是否有標註資料
+    has_annotations = bool(self.annotations_cache)
+    if not has_annotations and not self.image_list:
+        QMessageBox.information(
+            self, '訓練準備',
+            '🚀 歡迎使用自訂模型訓練功能！\n\n'
+            '訓練前請先：\n'
+            '1. 載入圖片資料夾\n'
+            '2. 標註車輛\n'
+            '3. 準備訓練資料\n\n'
+            '建議至少準備 100 張已標註的圖片以獲得較好的訓練效果。'
+        )
+        return
+    
+    # 顯示訓練對話框
+    try:
+        dialog = ModelTrainingDialog(self)
+        dialog.exec_()
+    except Exception as e:
+        QMessageBox.critical(
+            self, '訓練對話框錯誤',
+            f'無法開啟訓練對話框：\n{str(e)}\n\n'
+            '請檢查相關模組是否正確安裝。'
+        )
+
 def ai_predict_current_image(self):
     """AI預測當前圖片"""
     if not AI_AVAILABLE or not self.ai_assistant:
@@ -2527,6 +2586,10 @@ if AI_AVAILABLE:
     MainWindow.on_ai_predictions_accepted = on_ai_predictions_accepted
     MainWindow.on_ai_predictions_rejected = on_ai_predictions_rejected
     MainWindow.on_ai_status_updated = on_ai_status_updated
+
+# 將訓練功能方法添加到 MainWindow 類
+if TRAINING_AVAILABLE:
+    MainWindow.show_training_dialog = show_training_dialog
 
 
 if __name__ == '__main__':
