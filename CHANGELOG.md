@@ -10,8 +10,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 - Multi-language support (English, Japanese)
 - Video annotation support
-- Custom model training pipeline
 - Cloud backup integration
+
+## [2.2.0] - 2025-08-27
+
+### Added
+- 🎓 **Professional Custom Model Training System**
+  - Complete YOLOv8 custom model training pipeline with dataset preparation, model training, evaluation, and visualization
+  - Intelligent dataset splitting with automatic train/validation/test data allocation (70/20/10 ratio)
+  - Professional training dialog with tabbed interface for basic and advanced parameters
+  - Real-time training progress monitoring with epoch tracking and loss visualization
+  - Comprehensive model evaluation with mAP50, mAP50-95 metrics and performance reports
+  - Training result visualization with loss curves, confusion matrices, and prediction samples
+  - Automatic device detection (GPU/CPU) with fallback support for optimal training performance
+  - Custom training configurations with adjustable epochs, batch size, learning rate, and optimization parameters
+  - Training run management with automatic model saving and organized output directories
+
+- 🚀 **Enhanced Main Interface Integration**
+  - One-click model training access via toolbar button and Ctrl+T shortcut
+  - Seamless integration with existing vehicle class management system
+  - Professional training workflow integrated into main application interface
+  - Error handling and user feedback for training process
+
+### Technical Details
+- **Training Engine**: Professional YOLOv8 training system with dataset preparation, model training, and evaluation
+- **Training GUI**: Multi-tab interface with progress monitoring, real-time logging, and training thread management
+- **Device Support**: Automatic GPU/CPU detection with intelligent fallback for various hardware configurations
+- **Performance**: Optimized training parameters with professional-grade configuration options
 
 ## [2.1.3] - 2025-08-26
 
