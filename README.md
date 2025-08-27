@@ -76,8 +76,9 @@
 
 ### 建議配置
 - **記憶體**：8GB RAM 或以上
-- **顯示卡**：支援CUDA的NVIDIA GPU（AI功能加速）
+- **顯示卡**：支援CUDA的NVIDIA GPU（AI功能加速，建議 4GB+ VRAM）
 - **處理器**：Intel i5 或 AMD Ryzen 5 以上
+- **CUDA**：CUDA 11.8 或以上版本（GPU 加速必需）
 
 ## 🛠 安裝指南
 
@@ -103,7 +104,11 @@ py -m venv .venv
 # 2. 安裝依賴
 pip install -r requirements.txt
 
-# 3. 啟動程式
+# 3. GPU 支援（可選，但強烈建議）
+# 安裝 GPU 版本 PyTorch（CUDA 11.8）
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# 4. 啟動程式
 python main.py
 ```
 
@@ -194,6 +199,72 @@ XML結構化標註格式：
 ```
 
 ## 🔧 疑難排解
+
+### GPU 使用教學
+
+#### 🚀 GPU 加速設定
+使用 GPU 可以大幅提升 AI 預測和模型訓練速度（比 CPU 快 5-20 倍）：
+
+**1. 檢查 GPU 支援**
+```bash
+# 檢查是否有 NVIDIA GPU
+nvidia-smi
+
+# 檢查 CUDA 版本
+nvcc --version
+```
+
+**2. 安裝 GPU 版本的 PyTorch**
+```bash
+# 停用虛擬環境（如果已啟動）
+deactivate
+
+# 重新啟動虛擬環境
+.venv\Scripts\activate
+
+# 安裝 GPU 版本 PyTorch（根據 CUDA 版本選擇）
+# CUDA 11.8
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# CUDA 12.1
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# 或直接安裝最新版
+pip install torch torchvision torchaudio
+```
+
+**3. 驗證 GPU 設定**
+在程式中會自動顯示使用的設備：
+```
+🚀 使用 GPU 訓練：cuda:0    # GPU 可用
+💻 使用 CPU 訓練（未檢測到可用的 GPU）    # 僅 CPU
+```
+
+**4. GPU 使用指標**
+- **AI 預測**：GPU 加速 5-10 倍
+- **模型訓練**：GPU 加速 10-20 倍
+- **記憶體需求**：建議 4GB+ VRAM
+
+#### 🎯 GPU 效能優化
+- **批次大小調整**：GPU 記憶體充足時可增加 batch_size
+- **模型選擇**：GPU 環境建議使用 YOLOv8m 或 YOLOv8l
+- **訓練參數**：GPU 訓練時可增加 epochs 和 workers 數量
+
+#### ⚠️ 常見 GPU 問題
+**Q: 顯示 "CUDA out of memory"**
+- 減小批次大小（batch_size）
+- 選擇較小的模型（YOLOv8n 或 YOLOv8s）
+- 關閉其他使用 GPU 的程式
+
+**Q: GPU 不被識別**
+- 確認已安裝正確版本的 CUDA 和 cuDNN
+- 重新安裝 GPU 版本的 PyTorch
+- 檢查 NVIDIA 驅動程式是否最新
+
+**Q: 訓練速度仍然很慢**
+- 確認正在使用 GPU（查看訓練日誌）
+- 檢查 GPU 使用率（nvidia-smi）
+- 嘗試增加批次大小和 workers 數量
 
 ### 常見問題
 
